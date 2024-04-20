@@ -1,21 +1,9 @@
-from search_engines import Google
-from search_engines import Bing
-from search_engines import Yahoo
-from search_engines import Duckduckgo
-from search_engines import Startpage
-from search_engines import Aol
-from search_engines import Dogpile
-from search_engines import Ask
-from search_engines import Mojeek
-from search_engines import Brave
-from search_engines import Torch
-
-
 import requests
 import random
 from urllib.parse import urlparse
 from tld import get_tld
 
+# Load user agents from a file
 def load_user_agents(file_path):
     try:
         with open(file_path, 'r') as f:
@@ -24,56 +12,49 @@ def load_user_agents(file_path):
     except Exception as e:
         print(f"Error loading user agents file: {e}")
         return []
-    
-# Define a list of user agent strings for various browsers
-user_agents = load_user_agents('tools/resources/user_agents.txt')
 
-
+# Generate a random user agent
 def get_random_user_agent():
     return random.choice(user_agents)
 
-def get_webpage_text(url):
+# Check if a domain exists by sending an HTTP HEAD request
+def domain_exists(domain):
     try:
-        random_user_agent = get_random_user_agent()
-        response = requests.get(url, headers={"User-Agent": random_user_agent})
-        response.raise_for_status()  # Raise an exception for non-2xx status codes
-        return response.text
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching {url}: {e}")
-        return None
+        response = requests.head(f"http://{domain}")  # Check if domain is accessible
+        return response.status_code == 200  # Check if HTTP status code is 200 (OK)
+    except requests.exceptions.RequestException:
+        return False  # Any exception or non-200 response indicates domain does not exist
 
+# Generate possible domain names based on company name and domain extensions
+def generate_possible_domains(company_name, domain_extensions):
+    company_name = company_name.lower().replace(" ", "")
+    possible_domains = [company_name + ext for ext in domain_extensions]
+    return possible_domains
 
+# Get an existing domain by checking multiple domain extensions
+def get_existing_domain(company_name, domain_extensions):
+    possible_domains = generate_possible_domains(company_name, domain_extensions)
+    for domain in possible_domains:
+        if domain_exists(domain):
+            return domain
+    return None  # If no existing domain found
+
+# Search function using search engines
 def search(q=""):
     print("Executing Query: " + q)
-    engines = [Google(),Bing(),Yahoo(),Duckduckgo(),Startpage(),Aol(),Dogpile(),Ask(),Mojeek(),Brave(),Torch()]
-    current_engine = 0
+    engines = [Google(), Bing(), Yahoo(), Duckduckgo(), Startpage(), Aol(), Dogpile(), Ask(), Mojeek(), Brave(), Torch()]
     for engine in engines:
         try:
-            engine = engines[current_engine]
             results = engine.search(q)
             links = results.links()
-            if links: 
-               break
+            if links:
+                return links
         except:
-            current_engine = current_engine + 1
-        
-    return links
+            pass
+    return []  # Return empty list if no links are found
 
-
-
+# Find the best matching link containing the company name
 def find_matching_link(company_name, links):
-    """
-    This function finds the link in the list that best matches the company name,
-    considering company name presence in base domain and base domain length.
-
-    Args:
-        company_name (str): The company name to match against.
-        links (list): A list of URLs.
-
-    Returns:
-        str: The URL with the shortest base domain containing the company name, or None if no match is found.
-    """
-
     company_name_lower = company_name.lower()
     best_match = None
     best_match_length = float('inf')  # Initialize with a large value
@@ -94,22 +75,8 @@ def find_matching_link(company_name, links):
 
     return best_match
 
-
-
+# Find the best matching root domain containing the company name
 def find_matching_domain(company_name, links):
-    """
-    This function finds the root domain (without subdomains) in the list that best matches the company name,
-    considering company name presence in the root domain and domain length.
-
-    Args:
-        company_name (str): The company name to match against.
-        links (list): A list of URLs.
-
-    Returns:
-        str: The root domain (without subdomains) with the shortest length containing the company name,
-             or None if no match is found.
-    """
-
     company_name_lower = company_name.lower()
     best_match_domain = None
     best_match_length = float('inf')  # Initialize with a large value
@@ -131,27 +98,55 @@ def find_matching_domain(company_name, links):
 
     return best_match_domain
 
-
-
+# Get company website link using domain testing and search engines
 def get_company_website_link_for(company_name=None):
-    links = search("Company " + company_name)
-    if links:
-        print("Links returned: " + str(links))
-        company_url = find_matching_link(company_name,links=links)
-        print("The company url is: " + str(company_url))
-        return company_url
-    else:
-        print("Company Website Not Found")
-   
+    domain_extensions = [
+        ".com", ".net", ".org", ".io", ".co", ".ai", ".app", ".tech", ".design", ".online", ".blog"
+        # Add more domain extensions here as needed
+    ]
 
+    # Check if there's an existing domain based on company name and extensions
+    existing_domain = get_existing_domain(company_name, domain_extensions)
+
+    if existing_domain:
+        print(f"Existing domain found: http://{existing_domain}")
+        return f"http://{existing_domain}"
+    else:
+        print("No existing domain found, searching using search engines...")
+        links = search("Company " + company_name)
+        if links:
+            print("Links returned: " + str(links))
+            company_url = find_matching_link(company_name, links=links)
+            print("The company URL is: " + str(company_url))
+            return company_url
+        else:
+            print("Company website not found")
+
+# Get company domain using domain testing and search engines
 def get_company_domain_for(company_name=None):
-    links = search("Company " + company_name)
-    if links:
-        print("Links returned: " + str(links))
-        company_domain = find_matching_domain(company_name,links=links)
-        print("The company domain is: " + str(company_domain))
-        return company_domain
+    domain_extensions = [
+        ".com", ".net", ".org", ".io", ".co", ".ai", ".app", ".tech", ".design", ".online", ".blog"
+        # Add more domain extensions here as needed
+    ]
+
+    # Check if there's an existing domain based on company name and extensions
+    existing_domain = get_existing_domain(company_name, domain_extensions)
+
+    if existing_domain:
+        print(f"Existing domain found: {existing_domain}")
+        return existing_domain
     else:
-        print("Company Domain Not Found")
+        print("No existing domain found, searching using search engines...")
+        links = search("Company " + company_name)
+        if links:
+            print("Links returned: " + str(links))
+            company_domain = find_matching_domain(company_name, links=links)
+            print("The company domain is: " + str(company_domain))
+            return company_domain
+        else:
+            print("Company domain not found")
 
-
+# Example usage:
+# company_name = "Example Company"
+# get_company_website_link_for(company_name)
+# get_company_domain_for(company_name)

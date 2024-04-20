@@ -49,7 +49,7 @@ class RequestRotative:
 
 
 # Example usage:
-rotator = RequestRotative('tools/resources/user_agents.txt')
+rotator = RequestRotative('resources/user_agents.txt')
 
 # Send a GET request using the rotator (through Tor)
 response = rotator.send_request('GET', 'https://google.com')

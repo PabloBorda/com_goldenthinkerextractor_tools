@@ -20,7 +20,7 @@ class SearchEngine:
 
     def __init__(self) -> None:
         user_agents = []
-        file_path = '/home/golden/Desktop/Data/com_goldenthinkerextractor_tools/resources/user_agents.txt'
+        file_path = '/home/golden/Desktop/brainboost_data/data_tools/tools_goldenthinkerextractor/resources/user_agents.txt'
         with open(file_path, 'r') as file:
             for line in file:
                 # Remove leading/trailing whitespace and add to the list
