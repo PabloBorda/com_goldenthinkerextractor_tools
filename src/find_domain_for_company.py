@@ -1,6 +1,7 @@
 import requests
 import random
 from urllib.parse import urlparse
+from search_engines import Aol, Ask, Bing, Dogpile, Duckduckgo, Google, Mojeek, Startpage, Torch, Brave, Yahoo
 from tld import get_tld
 
 # Load user agents from a file
@@ -15,7 +16,7 @@ def load_user_agents(file_path):
 
 # Generate a random user agent
 def get_random_user_agent():
-    return random.choice(user_agents)
+    return random.choice(load_user_agents('/home/golden/Desktop/brainboost_data/data_tools/tools_goldenthinkerextractor/resources/user_agents.txt'))
 
 # Check if a domain exists by sending an HTTP HEAD request
 def domain_exists(domain):

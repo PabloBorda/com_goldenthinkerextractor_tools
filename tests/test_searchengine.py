@@ -21,7 +21,7 @@ def test_get_company_domain_for(search_instance):
         expected_domain = "tesla.com"
 
         # Call the function to get the matching domain
-        result_domain = search_instance.get_company_domain_for(company_name)
+        result_domain = search_instance.get_company_domain_for(company_name,country="United States")
 
 
         assert result_domain == expected_domain
