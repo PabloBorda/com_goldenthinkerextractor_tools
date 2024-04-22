@@ -1,5 +1,7 @@
 from bs4 import BeautifulSoup
 import requests
+
+
 from search_engines import Google
 from search_engines import Bing
 from search_engines import Yahoo
@@ -13,7 +15,6 @@ from search_engines import Brave
 from search_engines import Torch
 
 
-import socket
 import random
 from urllib.parse import urlparse
 from tld import get_tld
@@ -117,6 +118,11 @@ class SearchEngine:
 
     
     def domain_exists(self, domain):
+        
+        def normalize_company_name(self, company_name):
+        # Example normalization function
+            return company_name.lower().replace(" ", "")
+    
         try:
             # Send a GET request to the domain's homepage with a timeout
             response = requests.get(f"http://{domain}", timeout=10)  # Timeout set to 10 seconds
@@ -130,7 +136,7 @@ class SearchEngine:
                 title_tag = soup.find('title')
                 if title_tag:
                     title_text = title_tag.get_text().lower()
-                    normalized_company_name = self.normalize_company_name("Tesla")  # Example: Normalize company name
+                    normalized_company_name = normalize_company_name("Tesla")  # Example: Normalize company name
                     if normalized_company_name in title_text:
                         return True
 
