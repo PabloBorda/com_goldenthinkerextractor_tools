@@ -17,7 +17,7 @@ def load_user_agents(file_path):
         return []
 
 # Define a list of user agent strings for various browsers
-user_agents = load_user_agents('tools/resources/user_agents.txt')
+user_agents = load_user_agents('../resources/user_agents.txt')
 
 # Tor SOCKS proxy configuration
 tor_proxy = {

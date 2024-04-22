@@ -16,7 +16,7 @@ def load_user_agents(file_path):
 
 # Generate a random user agent
 def get_random_user_agent():
-    return random.choice(load_user_agents('/home/golden/Desktop/brainboost_data/data_tools/tools_goldenthinkerextractor/resources/user_agents.txt'))
+    return random.choice(load_user_agents('/home/golden/Desktop/brainboost_data/data_tools/tools_goldenthinkerextractor/../resources/user_agents.txt'))
 
 # Check if a domain exists by sending an HTTP HEAD request
 def domain_exists(domain):

@@ -3,7 +3,7 @@ import json
 import random
 
 class RequestRotative:
-    def __init__(self, user_agents_file_path='tools/resources/user_agents.txt'):
+    def __init__(self, user_agents_file_path='../resources/user_agents.txt'):
         self.user_agents_file_path = user_agents_file_path
         self.user_agents = self.load_user_agents()
         self.current_user_agent = None
@@ -49,7 +49,7 @@ class RequestRotative:
 
 
 # Example usage:
-rotator = RequestRotative('resources/user_agents.txt')
+rotator = RequestRotative('../resources/user_agents.txt')
 
 # Send a GET request using the rotator (through Tor)
 response = rotator.send_request('GET', 'https://google.com')

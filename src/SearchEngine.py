@@ -1,3 +1,5 @@
+from bs4 import BeautifulSoup
+import requests
 from search_engines import Google
 from search_engines import Bing
 from search_engines import Yahoo
@@ -20,7 +22,7 @@ class SearchEngine:
 
     def __init__(self) -> None:
         user_agents = []
-        file_path = '/home/golden/Desktop/brainboost_data/data_tools/tools_goldenthinkerextractor/resources/user_agents.txt'
+        file_path = '/brainboost/brainboost_data/data_tools/tools_goldenthinkerextractor_dataprocessing/resources/user_agents.txt'
         self._domain_extensions = [".com", ".net", ".org", ".io", ".co", ".ai"]
         with open(file_path, 'r') as file:
             for line in file:
@@ -57,7 +59,7 @@ class SearchEngine:
 
 
     def get_random_user_agent(self):
-        user_agents = self.load_user_agents('tools/resources/user_agents.txt')
+        user_agents = self.load_user_agents('../resources/user_agents.txt')
         return random.choice(user_agents)
 
 
@@ -116,13 +118,36 @@ class SearchEngine:
     
     def domain_exists(self, domain):
         try:
-            # Resolve the domain's IP address
-            ip_address = socket.gethostbyname(domain)
-            return True
+            # Send a GET request to the domain's homepage with a timeout
+            response = requests.get(f"http://{domain}", timeout=10)  # Timeout set to 10 seconds
 
-        except socket.gaierror:
-            # If the domain cannot be resolved, it does not exist
-            return False
+            # Check if the request was successful (status code 200)
+            if response.status_code == 200:
+                # Parse the HTML content using BeautifulSoup
+                soup = BeautifulSoup(response.content, 'html.parser')
+
+                # Example: Check for specific content in the HTML (e.g., company name in title tag)
+                title_tag = soup.find('title')
+                if title_tag:
+                    title_text = title_tag.get_text().lower()
+                    normalized_company_name = self.normalize_company_name("Tesla")  # Example: Normalize company name
+                    if normalized_company_name in title_text:
+                        return True
+
+                # Additional checks based on HTML content, headers, etc.
+                # ...
+
+        except requests.exceptions.Timeout:
+            # Handle timeout (request took too long to complete)
+            print(f"Timeout occurred while accessing {domain}")
+        except requests.exceptions.ConnectionError:
+            # Handle connection error (unable to connect to the domain)
+            print(f"Connection error while accessing {domain}")
+        except requests.exceptions.RequestException as e:
+            # Handle other types of request exceptions
+            print(f"Request error occurred for {domain}: {e}")
+
+        return False
 
     
 
