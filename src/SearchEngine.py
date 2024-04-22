@@ -11,7 +11,7 @@ from search_engines import Brave
 from search_engines import Torch
 
 
-import requests
+import socket
 import random
 from urllib.parse import urlparse
 from tld import get_tld
@@ -114,13 +114,16 @@ class SearchEngine:
         return country_extensions.get(country_name_lower, None)
 
     
-
-    def domain_exists(self,domain):
+    def domain_exists(self, domain):
         try:
-            response = requests.head(f"http://{domain}")  # Check if domain is accessible
-            return response.status_code == 200  # Check if HTTP status code is 200 (OK)
-        except requests.exceptions.RequestException:
-            return False  # Any exception or non-200 response indicates domain does not exist
+            # Resolve the domain's IP address
+            ip_address = socket.gethostbyname(domain)
+            return True
+
+        except socket.gaierror:
+            # If the domain cannot be resolved, it does not exist
+            return False
+
     
 
     
@@ -239,5 +242,3 @@ class SearchEngine:
             results = self._engines_dict[engine].search(q)
             links = results.links()
         return links
-    
-    
