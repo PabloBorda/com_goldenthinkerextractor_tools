@@ -19,6 +19,9 @@ import random
 from urllib.parse import urlparse
 from tld import get_tld
 
+import whois
+import dns.resolver
+
 class SearchEngine:
 
     def __init__(self) -> None:
@@ -117,44 +120,55 @@ class SearchEngine:
         return country_extensions.get(country_name_lower, None)
 
     
+
     def domain_exists(self, domain):
-        
-        def normalize_company_name(self, company_name):
-        # Example normalization function
-            return company_name.lower().replace(" ", "")
-    
         try:
-            # Send a GET request to the domain's homepage with a timeout
-            response = requests.get(f"http://{domain}", timeout=10)  # Timeout set to 10 seconds
+            # Check DNS resolution
+            answers = dns.resolver.resolve(domain, 'A')
+            if answers:
+                return True
+        except dns.resolver.NoAnswer:
+            pass
+        except dns.resolver.NXDOMAIN:
+            pass
+        except dns.exception.DNSException:
+            pass
 
-            # Check if the request was successful (status code 200)
-            if response.status_code == 200:
-                # Parse the HTML content using BeautifulSoup
-                soup = BeautifulSoup(response.content, 'html.parser')
-
-                # Example: Check for specific content in the HTML (e.g., company name in title tag)
-                title_tag = soup.find('title')
-                if title_tag:
-                    title_text = title_tag.get_text().lower()
-                    normalized_company_name = normalize_company_name("Tesla")  # Example: Normalize company name
-                    if normalized_company_name in title_text:
-                        return True
-
-                # Additional checks based on HTML content, headers, etc.
-                # ...
-
-        except requests.exceptions.Timeout:
-            # Handle timeout (request took too long to complete)
-            print(f"Timeout occurred while accessing {domain}")
-        except requests.exceptions.ConnectionError:
-            # Handle connection error (unable to connect to the domain)
-            print(f"Connection error while accessing {domain}")
-        except requests.exceptions.RequestException as e:
-            # Handle other types of request exceptions
-            print(f"Request error occurred for {domain}: {e}")
+        try:
+            # Use WHOIS to get domain registration information
+            w = whois.whois(domain)
+            if w:
+                return True
+        except Exception:
+            pass
 
         return False
 
+    def email_available_for_domain(self, domain):
+        try:
+            # Check DNS resolution for A (IPv4) records
+            answers = dns.resolver.resolve(domain, 'A')
+            if answers:
+                # Check for MX (Mail Exchange) records
+                mx_records = dns.resolver.resolve(domain, 'MX')
+                if mx_records:
+                    return True
+        except dns.resolver.NoAnswer:
+            pass
+        except dns.resolver.NXDOMAIN:
+            pass
+        except dns.exception.DNSException:
+            pass
+
+        # If DNS resolution failed or no MX records found, check WHOIS information
+        try:
+            w = whois.whois(domain)
+            if w:
+                return True
+        except Exception:
+            pass
+
+        return False
     
 
     
