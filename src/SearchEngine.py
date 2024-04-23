@@ -122,9 +122,12 @@ class SearchEngine:
     
 
     def domain_exists(self, domain):
+        domain_assured = domain
+        if 'http' in domain:
+            domain_assured = self.extract_domain_and_extension(domain)
         try:
             # Check DNS resolution
-            answers = dns.resolver.resolve(domain, 'A')
+            answers = dns.resolver.resolve(domain_assured, 'A')
             if answers:
                 return True
         except dns.resolver.NoAnswer:
@@ -136,7 +139,7 @@ class SearchEngine:
 
         try:
             # Use WHOIS to get domain registration information
-            w = whois.whois(domain)
+            w = whois.whois(domain_assured)
             if w:
                 return True
         except Exception:
@@ -172,6 +175,35 @@ class SearchEngine:
     
 
     
+    def extract_domain_and_extension(self,url):
+        if 'http' in url:
+            try:
+                # Parse the URL
+                parsed_url = urlparse(url)
+
+                # Get the netloc (domain) from the parsed URL
+                domain = parsed_url.netloc
+
+                # Split the domain by '.' to extract the last part as the extension
+                domain_parts = domain.split('.')
+                extension = domain_parts[-1] if len(domain_parts) > 1 else ''
+
+                # Combine domain and extension with a dot separator
+                domain_with_extension = '.'.join([domain, extension])
+
+                return domain_with_extension
+            
+            except Exception:
+                return url
+        else:
+            return url
+        
+
+
+
+
+
+
     def get_company_domain_for_extension(self,company_name=None):
 
         normalized_company_name = company_name.replace(" ", "").lower()
@@ -194,51 +226,61 @@ class SearchEngine:
 
          
     def get_company_domain_for(self,company_name,country=None):
-
+        
+        def filter_links(links, substring):
+            return [s for s in links if self.source_domainextension_for_country(substring) in s]
+        
         # Find the best matching root domain containing the company name
-        def find_best_matching_domain(company_name, links):
+        def find_best_matching_domain(company_name, links,country=None):
             company_name_lower = company_name.lower()
             best_match_domain = None
             best_match_length = float('inf')  # Initialize with a large value
 
             for link in links:
                 try:
-                    parsed_url = urlparse(link)
-                    netloc_parts = parsed_url.netloc.split('.')  # Split netloc into parts
-                    root_domain = '.'.join(netloc_parts[-2:])  # Get last two parts for root domain
+                    if self.source_domainextension_for_country(country) in link:
+                        return link
+                    else:
+                        parsed_url = urlparse(link)
+                        netloc_parts = parsed_url.netloc.split('.')  # Split netloc into parts
+                        root_domain = '.'.join(netloc_parts[-2:])  # Get last two parts for root domain
 
-                    if company_name_lower in root_domain:
-                        domain_length = len(root_domain)
-                        if domain_length < best_match_length:
-                            best_match_domain = root_domain
-                            best_match_length = domain_length
+                        if company_name_lower in root_domain:
+                            domain_length = len(root_domain)
+                            if domain_length < best_match_length:
+                                best_match_domain = root_domain
+                                best_match_length = domain_length
+                        
 
                 except (ValueError, AttributeError):  # Handle invalid URLs or domain extraction errors gracefully
                     pass
 
             return best_match_domain
-
-
         
-        company_domain = self.get_company_domain_for_extension(company_name=company_name)
-        if company_domain:
-            return company_domain
+
+
+        if country==None:
+            company_domain = self.get_company_domain_for_extension(company_name=company_name)
+            if company_domain:
+                return company_domain
         else:
             company_domain = self.get_company_domain_for_country(company_name=company_name,country=country)
             if company_domain:
                 return company_domain
             else:
-                company_domain = self.search(company_name)
                 print("No existing domain found, searching using search engines...")
-                links = self.search("Company " + company_name)
-                if links:
-                    print("Links returned: " + str(links))
-                    company_domain = find_best_matching_domain(company_name, links=links)
-                    print("The company domain is: " + str(company_domain))
-                    return company_domain
+                links = self.search(company_name)
+                filtered_links_by_country = filter_links(links, country)
+                filtered_links_by_country_that_do_exist = [l for l in filtered_links_by_country if self.domain_exists(l) ]
+                filtered_links_that_exist = [l for l in links if self.domain_exists(l) ]
+                if len(filtered_links_by_country_that_do_exist) > 1:
+                    print("Link for specific country exists: " + str(filtered_links_by_country_that_do_exist))
+                    company_domain = find_best_matching_domain(company_name, links=filtered_links_by_country_that_do_exist,country=country)                    
                 else:
-                    print("Company domain not found")
-                return company_domain
+                    company_domain = find_best_matching_domain(company_name, links=filtered_links_that_exist,country=country)
+
+                print("The company domain is: " + str(company_domain))                    
+        return self.extract_domain_and_extension(company_domain)
     
 
 
@@ -274,7 +316,7 @@ class SearchEngine:
         
         current_engine = 0
         if engine==None:
-            for engine in self.engines:
+            for engine in self._engines:
                 try:
                     engine = self._engines[current_engine]
                     results = engine.search(q)
